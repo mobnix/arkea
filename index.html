@@ -20,6 +20,28 @@
       background: url('https://cdn.pixabay.com/photo/2017/01/20/00/30/galaxy-1990298_1280.jpg') no-repeat center center fixed;
       background-size: cover;
       color: var(--text-color);
+      display: flex;
+    }
+    .sidebar {
+      width: 200px;
+      background-color: var(--container-bg);
+      height: 100vh;
+      padding: 20px;
+      box-shadow: 2px 0 5px #000;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .sidebar a {
+      color: var(--text-color);
+      text-decoration: none;
+      font-weight: bold;
+    }
+    .main-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
     }
     header {
       padding: 20px;
@@ -69,6 +91,26 @@
     input[type=range] {
       width: 100px;
     }
+    .comments {
+      margin-top: 15px;
+    }
+    .comments textarea {
+      width: 100%;
+      padding: 10px;
+      background: #1c1c1c;
+      border: 1px solid #444;
+      border-radius: 5px;
+      color: white;
+    }
+    .comments button {
+      margin-top: 5px;
+      background-color: var(--accent-color);
+      border: none;
+      padding: 8px 12px;
+      color: white;
+      cursor: pointer;
+      border-radius: 4px;
+    }
     footer {
       text-align: center;
       padding: 20px;
@@ -92,50 +134,55 @@
       text-align: center;
       margin: 20px 0;
     }
+    #progressContainer {
+      width: 100%;
+      max-width: 500px;
+      margin: 10px auto;
+      background-color: #222;
+      border-radius: 5px;
+      overflow: hidden;
+      display: none;
+    }
+    #progressBar {
+      height: 10px;
+      background-color: var(--accent-color);
+      width: 0%;
+    }
   </style>
 </head>
 <body>
-  <header>
-    <h1>DJ Nome - Meus Sets</h1>
-  </header>
-  <div class="container">
-    <div class="upload-section">
-      <input type="file" id="uploadInput" accept="audio/wav" style="display:none" />
-      <button class="upload-button" onclick="document.getElementById('uploadInput').click()">Upload de Novo Set</button>
-    </div>
-
-  <div id="global-player">
-    <strong>Global Player</strong>
-    <div id="global-waveform" class="waveform" style="width: 90%;"></div>
-    <div class="controls">
-      <button class="play-button" onclick="globalWave.playPause()">Play/Pause</button>
-      <input type="range" min="0" max="1" step="0.01" value="1" onchange="globalWave.setVolume(this.value)" />
-    </div>
+  <div class="sidebar">
+    <a href="#">Conta</a>
+    <a href="#">Uploads</a>
+    <a href="#">Seguidores</a>
+    <a href="https://instagram.com/SEU_USUARIO" target="_blank">Siga no Instagram</a>
   </div>
-
-  <footer>
-    © 2025 DJ Nome — Todos os direitos reservados
-  </footer>
-
+  <div class="main-content">
+    <header>
+      <h1>DJ Nome - Meus Sets</h1>
+    </header>
+    <div class="container">
+      <div class="upload-section">
+        <input type="file" id="uploadInput" accept="audio/wav" style="display:none" />
+        <button class="upload-button" onclick="document.getElementById('uploadInput').click()">Upload de Novo Set</button>
+        <div id="progressContainer">
+          <div id="progressBar"></div>
+        </div>
+      </div>
+    </div>
+    <div id="global-player">
+      <strong>Global Player</strong>
+      <div id="global-waveform" class="waveform" style="width: 90%;"></div>
+      <div class="controls">
+        <button class="play-button" onclick="toggleGlobalPlay()">Play/Pause</button>
+        <input type="range" min="0" max="1" step="0.01" value="1" onchange="globalWave.setVolume(this.value)" />
+      </div>
+    </div>
+    <footer>
+      © 2025 DJ Nome — Todos os direitos reservados
+    </footer>
+  </div>
   <script>
-    const wave1 = WaveSurfer.create({
-      container: '#waveform1',
-      waveColor: '#555',
-      progressColor: '#ff5c5c',
-      height: 80,
-      responsive: true
-    });
-    wave1.load('sets/verao2025.wav');
-
-    const wave2 = WaveSurfer.create({
-      container: '#waveform2',
-      waveColor: '#555',
-      progressColor: '#ff5c5c',
-      height: 80,
-      responsive: true
-    });
-    wave2.load('sets/noturno.wav');
-
     const globalWave = WaveSurfer.create({
       container: '#global-waveform',
       waveColor: '#444',
@@ -143,24 +190,33 @@
       height: 60,
       responsive: true
     });
-    globalWave.load('sets/noturno.wav');
 
-    function togglePlay(index) {
-      if (index === 1) {
-        wave1.playPause();
-      } else if (index === 2) {
-        wave2.playPause();
+    function toggleGlobalPlay() {
+      if (globalWave && typeof globalWave.playPause === 'function') {
+        globalWave.playPause();
+      } else {
+        console.warn('O player global ainda não está pronto.');
       }
-    }
-
-    function changeVolume(index, value) {
-      if (index === 1) wave1.setVolume(value);
-      if (index === 2) wave2.setVolume(value);
     }
 
     document.getElementById('uploadInput').addEventListener('change', function(e) {
       const file = e.target.files[0];
       if (!file) return;
+
+      const progressContainer = document.getElementById('progressContainer');
+      const progressBar = document.getElementById('progressBar');
+      progressContainer.style.display = 'block';
+
+      let progress = 0;
+      const interval = setInterval(() => {
+        if (progress >= 100) {
+          clearInterval(interval);
+          progressContainer.style.display = 'none';
+        } else {
+          progress += 2 + Math.random() * 5;
+          progressBar.style.width = Math.min(progress, 100) + '%';
+        }
+      }, 100);
 
       const container = document.createElement('div');
       container.className = 'set';
@@ -170,6 +226,10 @@
         <div class="controls">
           <button class="play-button">Play/Pause</button>
           <input type="range" min="0" max="1" step="0.01" value="1" />
+        </div>
+        <div class="comments">
+          <textarea placeholder="Deixe um comentário..."></textarea>
+          <button>Comentar</button>
         </div>
       `;
       document.querySelector('.container').appendChild(container);
@@ -190,6 +250,8 @@
 
       playBtn.addEventListener('click', () => newWave.playPause());
       volSlider.addEventListener('input', (e) => newWave.setVolume(e.target.value));
+
+      globalWave.load(URL.createObjectURL(file));
     });
   </script>
 </body>
