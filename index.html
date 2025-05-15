@@ -36,6 +36,7 @@
       left: 0;
       top: 0;
       overflow-y: auto;
+      z-index: 1000;
     }
     .sidebar a, .sidebar button {
       color: var(--text-color);
@@ -58,7 +59,7 @@
       display: flex;
       flex-direction: column;
       overflow-y: auto;
-      padding-bottom: 80px;
+      padding-bottom: 120px; /* espaço para barra inferior */
     }
     header {
       padding: 20px;
@@ -183,7 +184,7 @@
       width: 0%;
       transition: width 0.2s ease;
     }
-    /* Relógio do tempo da música menor */
+    /* Relógio do tempo da música maior */
     #time-display {
       position: fixed;
       bottom: 20px;
@@ -200,6 +201,37 @@
       min-width: 110px;
       text-align: center;
       font-variant-numeric: tabular-nums;
+    }
+    /* Barra de progresso na parte inferior */
+    #music-progress-container {
+      position: fixed;
+      bottom: 20px;
+      left: 150px; /* relógio + margem */
+      right: 0;
+      height: 30px;
+      background: rgba(0,0,0,0.7);
+      border-radius: 15px;
+      display: flex;
+      align-items: center;
+      padding: 0 10px;
+      box-sizing: border-box;
+      z-index: 1100;
+      cursor: pointer;
+      user-select: none;
+    }
+    #music-progress {
+      width: 100%;
+      height: 8px;
+      background: #444;
+      border-radius: 4px;
+      overflow: hidden;
+      position: relative;
+    }
+    #music-progress-filled {
+      background: var(--accent-color);
+      height: 100%;
+      width: 0%;
+      transition: width 0.1s linear;
     }
   </style>
 </head>
@@ -219,7 +251,6 @@
     <input type="file" id="uploadInput" accept="audio/wav" />
 
     <div class="container" id="sets-container">
-      <!-- Sets aparecerão aqui -->
       <p>Bem-vindo! Faça upload de seus sets ou clique em "Uploads" para ver seus sets carregados.</p>
     </div>
     <div id="progressContainer">
@@ -227,6 +258,12 @@
     </div>
 
     <div id="time-display">00:00</div>
+
+    <div id="music-progress-container" title="Clique para pular">
+      <div id="music-progress">
+        <div id="music-progress-filled"></div>
+      </div>
+    </div>
 
     <footer>
       © 2025 Arkea — Todos os direitos reservados
@@ -245,6 +282,9 @@
     const progressBar = document.getElementById('progressBar');
     const setsContainer = document.getElementById('sets-container');
     const timeDisplay = document.getElementById('time-display');
+
+    const musicProgressFilled = document.getElementById('music-progress-filled');
+    const musicProgressContainer = document.getElementById('music-progress-container');
 
     const menuUploads = document.getElementById('menu-uploads');
     const menuConta = document.getElementById('menu-conta');
@@ -316,11 +356,18 @@
         newWave.on('audioprocess', () => {
           if (newWave.isPlaying()) {
             timeDisplay.textContent = formatTime(newWave.getCurrentTime());
+
+            // Atualiza barra de progresso
+            const duration = newWave.getDuration();
+            const currentTime = newWave.getCurrentTime();
+            const progressPercent = (currentTime / duration) * 100;
+            musicProgressFilled.style.width = progressPercent + '%';
           }
         });
 
         newWave.on('finish', () => {
           timeDisplay.textContent = formatTime(0);
+          musicProgressFilled.style.width = '0%';
         });
 
         newWave.on('pause', () => {
@@ -378,6 +425,20 @@
 
     menuSeguidores.addEventListener('click', () => {
       setsContainer.innerHTML = '<p>Área de seguidores - funcionalidades em desenvolvimento.</p>';
+    });
+
+    // Controle para permitir clicar na barra para pular no áudio
+    musicProgressContainer.addEventListener('click', (e) => {
+      if (!currentWave) return;
+      const rect = musicProgressContainer.getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      const totalWidth = rect.width;
+      const clickRatio = clickX / totalWidth;
+      const duration = currentWave.getDuration();
+      const newTime = duration * clickRatio;
+      currentWave.seekTo(clickRatio);
+      currentWave.play();
+      timeDisplay.textContent = formatTime(newTime);
     });
   </script>
 </body>
