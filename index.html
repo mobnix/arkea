@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Arkea</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <title>Meus DJ Sets</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet" />
   <script src="https://unpkg.com/wavesurfer.js"></script>
   <style>
     :root {
@@ -21,7 +21,7 @@
       background-size: cover;
       color: var(--text-color);
       display: flex;
-      height: 100vh;
+      min-height: 100vh;
     }
     .sidebar {
       width: 200px;
@@ -32,37 +32,39 @@
       display: flex;
       flex-direction: column;
       gap: 20px;
+      position: fixed;
+      left: 0;
+      top: 0;
+      overflow-y: auto;
     }
     .sidebar a {
       color: var(--text-color);
       text-decoration: none;
       font-weight: bold;
-      cursor: pointer;
-    }
-    .sidebar a:hover {
-      color: var(--accent-color);
     }
     .main-content {
       flex: 1;
+      margin-left: 200px;
       display: flex;
       flex-direction: column;
       overflow-y: auto;
-      padding: 20px;
+      padding-bottom: 80px;
     }
     header {
       padding: 20px;
       text-align: center;
       background-color: var(--container-bg);
       border-bottom: 1px solid var(--border-color);
-      margin-bottom: 20px;
-      border-radius: 10px;
-      box-shadow: 0 0 10px #000;
+      position: sticky;
+      top: 0;
+      z-index: 100;
     }
     h1 {
       font-size: 2rem;
       margin: 0;
     }
     .container {
+      padding: 20px;
       max-width: 800px;
       margin: auto;
     }
@@ -72,11 +74,21 @@
       padding: 20px;
       margin-bottom: 20px;
       box-shadow: 0 0 10px #000;
+      position: relative;
     }
     .set h2 {
       margin-top: 0;
       font-size: 1.2rem;
       color: var(--accent-color);
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+    .set img.reference-img {
+      width: 60px;
+      height: 60px;
+      object-fit: cover;
+      border-radius: 8px;
     }
     .waveform {
       margin-top: 10px;
@@ -87,7 +99,7 @@
       gap: 10px;
       margin-top: 10px;
     }
-    .play-button, .volume, .upload-button {
+    .play-button, .volume {
       background-color: var(--accent-color);
       border: none;
       color: white;
@@ -109,6 +121,7 @@
       border: 1px solid #444;
       border-radius: 5px;
       color: white;
+      resize: vertical;
     }
     .comments button {
       margin-top: 5px;
@@ -118,6 +131,32 @@
       color: white;
       cursor: pointer;
       border-radius: 4px;
+    }
+    footer {
+      text-align: center;
+      padding: 20px;
+      color: #ccc;
+      font-size: 0.9rem;
+      margin-top: auto;
+      background-color: var(--container-bg);
+      border-top: 1px solid var(--border-color);
+    }
+    .upload-button {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 1100;
+      background-color: var(--accent-color);
+      border: none;
+      color: white;
+      padding: 12px 20px;
+      font-size: 1rem;
+      border-radius: 5px;
+      cursor: pointer;
+      box-shadow: 0 0 10px var(--accent-color);
+    }
+    #uploadInput {
+      display: none;
     }
     #progressContainer {
       width: 100%;
@@ -134,37 +173,23 @@
       width: 0%;
       transition: width 0.2s ease;
     }
-    #timeDisplay {
+    /* Relógio do tempo da música menor */
+    #time-display {
       position: fixed;
-      bottom: 10px;
-      left: 10px;
-      background: var(--container-bg);
-      padding: 32px 60px;
-      border-radius: 20px;
-      font-weight: bold;
-      font-family: monospace;
+      bottom: 20px;
+      left: 20px;
       color: var(--accent-color);
-      box-shadow: 0 0 8px var(--accent-color);
+      font-family: 'Inter', sans-serif;
+      font-weight: 600;
+      font-size: 2rem;  /* menor que 4rem */
+      background: rgba(0,0,0,0.7);
+      padding: 10px 20px;
+      border-radius: 10px;
       user-select: none;
-      z-index: 1000;
-      min-width: 80px;
+      z-index: 1100;
+      min-width: 110px;
       text-align: center;
-      font-size: 4rem;
-    }
-    .reference-img {
-      max-width: 100%;
-      max-height: 150px;
-      display: block;
-      margin: 10px auto 0 auto;
-      border-radius: 8px;
-      box-shadow: 0 0 10px var(--accent-color);
-    }
-    /* Sections */
-    #upload-section, #uploads-list {
-      display: none;
-    }
-    #upload-section.active, #uploads-list.active {
-      display: block;
+      font-variant-numeric: tabular-nums;
     }
   </style>
 </head>
@@ -180,65 +205,127 @@
       <h1>ARKEA</h1>
     </header>
 
-    <!-- Upload Section -->
-    <div id="upload-section" class="active container">
-      <div class="upload-section-inner">
-        <input type="file" id="uploadInput" accept="audio/wav" style="display:none" />
-        <button class="upload-button" onclick="document.getElementById('uploadInput').click()">Upload de Novo Set</button>
-        <div id="progressContainer">
-          <div id="progressBar"></div>
-        </div>
-      </div>
+    <button class="upload-button" onclick="document.getElementById('uploadInput').click()">Upload de Novo Set</button>
+    <input type="file" id="uploadInput" accept="audio/wav" />
+
+    <div class="container" id="sets-container">
+      <!-- Sets aparecerão aqui -->
+    </div>
+    <div id="progressContainer">
+      <div id="progressBar"></div>
     </div>
 
-    <!-- Uploads List Section -->
-    <div id="uploads-list" class="container">
-      <h2>Sets Enviados</h2>
-      <div id="setsContainer"></div>
-      <p id="no-uploads-msg" style="color: #aaa;">Nenhum set enviado ainda.</p>
-    </div>
+    <div id="time-display">00:00</div>
+
+    <footer>
+      © 2025 Arkea — Todos os direitos reservados
+    </footer>
   </div>
-  <div id="timeDisplay">00:00</div>
 
   <script>
     function formatTime(seconds) {
-      const m = Math.floor(seconds / 60).toString().padStart(2, '0');
-      const s = Math.floor(seconds % 60).toString().padStart(2, '0');
-      return `${m}:${s}`;
+      const mins = Math.floor(seconds / 60);
+      const secs = Math.floor(seconds % 60);
+      return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
     }
 
-    const timeDisplay = document.getElementById('timeDisplay');
     const uploadInput = document.getElementById('uploadInput');
     const progressContainer = document.getElementById('progressContainer');
     const progressBar = document.getElementById('progressBar');
+    const setsContainer = document.getElementById('sets-container');
+    const timeDisplay = document.getElementById('time-display');
 
-    // Sections
-    const uploadSection = document.getElementById('upload-section');
-    const uploadsList = document.getElementById('uploads-list');
-    const setsContainer = document.getElementById('setsContainer');
-    const noUploadsMsg = document.getElementById('no-uploads-msg');
+    let currentWave = null;
 
-    // Menu items
-    const menuUploads = document.getElementById('menu-uploads');
-    const menuConta = document.getElementById('menu-conta');
-    const menuSeguidores = document.getElementById('menu-seguidores');
+    uploadInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
 
-    // Array para armazenar os sets
-    const uploadedSets = [];
+      progressContainer.style.display = 'block';
+      progressBar.style.width = '0%';
 
-    // Função para criar o HTML de um set
-    function createSetElement(file) {
-      const container = document.createElement('div');
-      container.className = 'set';
-      container.innerHTML = `
-        <h2>${file.name}</h2>
-        <img class="reference-img" src="https://cdn.pixabay.com/photo/2017/01/20/00/30/galaxy-1990298_1280.jpg" alt="Imagem referência do espaço" />
-        <div class="waveform"></div>
-        <div class="controls">
-          <button class="play-button">Play/Pause</button>
-          <input type="range" min="0" max="1" step="0.01" value="1" />
-        </div>
-        <div class="comments">
-          <textarea placeholder="Deixe um comentário..."></textarea>
-          <button>Comentar</button>
-       
+      const reader = new FileReader();
+
+      reader.onprogress = (event) => {
+        if (event.lengthComputable) {
+          const percent = (event.loaded / event.total) * 100;
+          progressBar.style.width = percent.toFixed(2) + '%';
+        }
+      };
+
+      reader.onloadend = () => {
+        progressContainer.style.display = 'none';
+
+        const setDiv = document.createElement('div');
+        setDiv.className = 'set';
+
+        const imgUrl = 'https://cdn.pixabay.com/photo/2017/01/20/00/30/galaxy-1990298_1280.jpg';
+
+        setDiv.innerHTML = `
+          <h2><img src="${imgUrl}" alt="Imagem Referência" class="reference-img" /> ${file.name}</h2>
+          <div class="waveform"></div>
+          <div class="controls">
+            <button class="play-button">Play/Pause</button>
+            <input type="range" min="0" max="1" step="0.01" value="1" class="volume" />
+          </div>
+          <div class="comments">
+            <textarea placeholder="Deixe um comentário..."></textarea>
+            <button>Comentar</button>
+          </div>
+        `;
+
+        setsContainer.appendChild(setDiv);
+
+        const waveContainer = setDiv.querySelector('.waveform');
+        const playBtn = setDiv.querySelector('.play-button');
+        const volSlider = setDiv.querySelector('.volume');
+
+        const wave = WaveSurfer.create({
+          container: waveContainer,
+          waveColor: '#555',
+          progressColor: 'var(--accent-color)',
+          height: 80,
+          responsive: true
+        });
+
+        wave.load(URL.createObjectURL(file));
+
+        playBtn.addEventListener('click', () => {
+          if (wave.isPlaying()) {
+            wave.pause();
+          } else {
+            if(currentWave && currentWave !== wave){
+              currentWave.pause();
+            }
+            wave.play();
+            currentWave = wave;
+          }
+        });
+
+        volSlider.addEventListener('input', (e) => {
+          wave.setVolume(e.target.value);
+        });
+
+        wave.on('audioprocess', () => {
+          if (wave.isPlaying()) {
+            timeDisplay.textContent = formatTime(wave.getCurrentTime());
+          }
+        });
+
+        wave.on('finish', () => {
+          timeDisplay.textContent = formatTime(0);
+        });
+
+        wave.on('pause', () => {
+          timeDisplay.textContent = formatTime(wave.getCurrentTime());
+        });
+
+        wave.setVolume(1);
+        uploadInput.value = '';
+      };
+
+      reader.readAsArrayBuffer(file);
+    });
+  </script>
+</body>
+</html>
