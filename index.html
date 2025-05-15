@@ -42,6 +42,7 @@
       display: flex;
       flex-direction: column;
       overflow-y: auto;
+      position: relative;
     }
     header {
       padding: 20px;
@@ -147,6 +148,32 @@
       height: 10px;
       background-color: var(--accent-color);
       width: 0%;
+      transition: width 0.2s ease;
+    }
+    /* LGPD banner */
+    #lgpd-banner {
+      position: fixed;
+      bottom: 70px;
+      left: 0;
+      width: 100%;
+      background-color: rgba(0,0,0,0.85);
+      color: white;
+      padding: 15px;
+      text-align: center;
+      z-index: 1000;
+    }
+    #lgpd-banner a {
+      color: var(--accent-color);
+      text-decoration: underline;
+    }
+    #lgpd-banner button {
+      margin-left: 15px;
+      background-color: var(--accent-color);
+      border: none;
+      color: white;
+      padding: 8px 12px;
+      cursor: pointer;
+      border-radius: 4px;
     }
   </style>
 </head>
@@ -162,6 +189,7 @@
       <h1>DJ Nome - Meus Sets</h1>
     </header>
     <div class="container">
+
       <div class="upload-section">
         <input type="file" id="uploadInput" accept="audio/wav" style="display:none" />
         <button class="upload-button" onclick="document.getElementById('uploadInput').click()">Upload de Novo Set</button>
@@ -169,7 +197,15 @@
           <div id="progressBar"></div>
         </div>
       </div>
+
+      <!-- Banner LGPD -->
+      <div id="lgpd-banner">
+        <span>Este site coleta dados como nome de arquivos e comentários para melhorar sua experiência. Ao continuar navegando, você concorda com nossa <a href="#politica">Política de Privacidade</a>.</span>
+        <button onclick="aceitarLGPD()">Aceitar</button>
+      </div>
+
     </div>
+
     <div id="global-player">
       <strong>Global Player</strong>
       <div id="global-waveform" class="waveform" style="width: 90%;"></div>
@@ -178,10 +214,19 @@
         <input type="range" min="0" max="1" step="0.01" value="1" onchange="globalWave.setVolume(this.value)" />
       </div>
     </div>
+
     <footer>
       © 2025 DJ Nome — Todos os direitos reservados
     </footer>
   </div>
+
+  <!-- Página simples Política de Privacidade -->
+  <div id="politica" style="background: var(--container-bg); color: var(--text-color); max-width: 800px; margin: 40px auto; padding: 20px; border-radius: 10px;">
+    <h2>Política de Privacidade</h2>
+    <p>Este site coleta dados como nome de arquivos enviados e comentários inseridos pelos usuários. As informações não são compartilhadas com terceiros e são usadas apenas para exibição no site.</p>
+    <p>Você tem o direito de solicitar a exclusão desses dados a qualquer momento.</p>
+  </div>
+
   <script>
     const globalWave = WaveSurfer.create({
       container: '#global-waveform',
@@ -206,52 +251,69 @@
       const progressContainer = document.getElementById('progressContainer');
       const progressBar = document.getElementById('progressBar');
       progressContainer.style.display = 'block';
+      progressBar.style.width = '0%';
 
-      let progress = 0;
-      const interval = setInterval(() => {
-        if (progress >= 100) {
-          clearInterval(interval);
-          progressContainer.style.display = 'none';
-        } else {
-          progress += 2 + Math.random() * 5;
-          progressBar.style.width = Math.min(progress, 100) + '%';
+      const reader = new FileReader();
+
+      reader.onprogress = (event) => {
+        if (event.lengthComputable) {
+          const percent = (event.loaded / event.total) * 100;
+          progressBar.style.width = percent.toFixed(2) + '%';
         }
-      }, 100);
+      };
 
-      const container = document.createElement('div');
-      container.className = 'set';
-      container.innerHTML = `
-        <h2>${file.name}</h2>
-        <div class="waveform"></div>
-        <div class="controls">
-          <button class="play-button">Play/Pause</button>
-          <input type="range" min="0" max="1" step="0.01" value="1" />
-        </div>
-        <div class="comments">
-          <textarea placeholder="Deixe um comentário..."></textarea>
-          <button>Comentar</button>
-        </div>
-      `;
-      document.querySelector('.container').appendChild(container);
+      reader.onloadend = () => {
+        progressContainer.style.display = 'none';
 
-      const waveContainer = container.querySelector('.waveform');
-      const playBtn = container.querySelector('.play-button');
-      const volSlider = container.querySelector('input[type=range]');
+        const container = document.createElement('div');
+        container.className = 'set';
+        container.innerHTML = `
+          <h2>${file.name}</h2>
+          <div class="waveform"></div>
+          <div class="controls">
+            <button class="play-button">Play/Pause</button>
+            <input type="range" min="0" max="1" step="0.01" value="1" />
+          </div>
+          <div class="comments">
+            <textarea placeholder="Deixe um comentário..."></textarea>
+            <button>Comentar</button>
+          </div>
+        `;
+        document.querySelector('.container').appendChild(container);
 
-      const newWave = WaveSurfer.create({
-        container: waveContainer,
-        waveColor: '#555',
-        progressColor: '#ff5c5c',
-        height: 80,
-        responsive: true
-      });
+        const waveContainer = container.querySelector('.waveform');
+        const playBtn = container.querySelector('.play-button');
+        const volSlider = container.querySelector('input[type=range]');
 
-      newWave.load(URL.createObjectURL(file));
+        const newWave = WaveSurfer.create({
+          container: waveContainer,
+          waveColor: '#555',
+          progressColor: '#ff5c5c',
+          height: 80,
+          responsive: true
+        });
 
-      playBtn.addEventListener('click', () => newWave.playPause());
-      volSlider.addEventListener('input', (e) => newWave.setVolume(e.target.value));
+        newWave.load(URL.createObjectURL(file));
 
-      globalWave.load(URL.createObjectURL(file));
+        playBtn.addEventListener('click', () => newWave.playPause());
+        volSlider.addEventListener('input', (e) => newWave.setVolume(e.target.value));
+
+        globalWave.load(URL.createObjectURL(file));
+      };
+
+      reader.readAsArrayBuffer(file);
+    });
+
+    function aceitarLGPD() {
+      document.getElementById('lgpd-banner').style.display = 'none';
+      localStorage.setItem('lgpdAceito', 'true');
+    }
+
+    window.addEventListener('load', () => {
+      if (localStorage.getItem('lgpdAceito') === 'true') {
+        const banner = document.getElementById('lgpd-banner');
+        if (banner) banner.style.display = 'none';
+      }
     });
   </script>
 </body>
