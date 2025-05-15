@@ -9,7 +9,7 @@
   <style>
     :root {
       --bg-color: #0e0e0e;
-      --container-bg: #1a1a1a;
+      --container-bg: rgba(0, 0, 0, 0.7);
       --text-color: #f5f5f5;
       --accent-color: #ff5c5c;
       --border-color: #333;
@@ -17,7 +17,8 @@
     body {
       margin: 0;
       font-family: 'Inter', sans-serif;
-      background-color: var(--bg-color);
+      background: url('https://cdn.pixabay.com/photo/2017/01/20/00/30/galaxy-1990298_1280.jpg') no-repeat center center fixed;
+      background-size: cover;
       color: var(--text-color);
     }
     header {
@@ -56,7 +57,7 @@
       gap: 10px;
       margin-top: 10px;
     }
-    .play-button, .volume {
+    .play-button, .volume, .upload-button {
       background-color: var(--accent-color);
       border: none;
       color: white;
@@ -71,7 +72,7 @@
     footer {
       text-align: center;
       padding: 20px;
-      color: #888;
+      color: #ccc;
       font-size: 0.9rem;
     }
     #global-player {
@@ -79,13 +80,17 @@
       bottom: 0;
       left: 0;
       width: 100%;
-      background-color: #111;
+      background-color: rgba(0, 0, 0, 0.85);
       border-top: 1px solid #333;
       display: flex;
       flex-direction: column;
       align-items: center;
       padding: 10px;
       z-index: 999;
+    }
+    .upload-section {
+      text-align: center;
+      margin: 20px 0;
     }
   </style>
 </head>
@@ -94,6 +99,11 @@
     <h1>DJ Nome - Meus Sets</h1>
   </header>
   <div class="container">
+    <div class="upload-section">
+      <input type="file" id="uploadInput" accept="audio/wav" style="display:none" />
+      <button class="upload-button" onclick="document.getElementById('uploadInput').click()">Upload de Novo Set</button>
+    </div>
+
     <div class="set">
       <h2>Set de Verão 2025</h2>
       <p>Gravado ao vivo em Janeiro.</p>
@@ -168,6 +178,40 @@
       if (index === 1) wave1.setVolume(value);
       if (index === 2) wave2.setVolume(value);
     }
+
+    document.getElementById('uploadInput').addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const container = document.createElement('div');
+      container.className = 'set';
+      container.innerHTML = `
+        <h2>${file.name}</h2>
+        <div class="waveform"></div>
+        <div class="controls">
+          <button class="play-button">Play/Pause</button>
+          <input type="range" min="0" max="1" step="0.01" value="1" />
+        </div>
+      `;
+      document.querySelector('.container').appendChild(container);
+
+      const waveContainer = container.querySelector('.waveform');
+      const playBtn = container.querySelector('.play-button');
+      const volSlider = container.querySelector('input[type=range]');
+
+      const newWave = WaveSurfer.create({
+        container: waveContainer,
+        waveColor: '#555',
+        progressColor: '#ff5c5c',
+        height: 80,
+        responsive: true
+      });
+
+      newWave.load(URL.createObjectURL(file));
+
+      playBtn.addEventListener('click', () => newWave.playPause());
+      volSlider.addEventListener('input', (e) => newWave.setVolume(e.target.value));
+    });
   </script>
 </body>
 </html>
