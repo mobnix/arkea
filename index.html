@@ -65,6 +65,19 @@
       padding: 20px;
       margin-bottom: 20px;
       box-shadow: 0 0 10px #000;
+      display: flex;
+      gap: 15px;
+      align-items: center;
+    }
+    .set img {
+      width: 100px;
+      height: 100px;
+      object-fit: cover;
+      border-radius: 8px;
+      box-shadow: 0 0 8px var(--accent-color);
+    }
+    .set-content {
+      flex: 1;
     }
     .set h2 {
       margin-top: 0;
@@ -137,6 +150,23 @@
       width: 0%;
       transition: width 0.2s ease;
     }
+    /* Relógio no canto inferior esquerdo */
+    #timeDisplay {
+      position: fixed;
+      bottom: 10px;
+      left: 10px;
+      background: var(--container-bg);
+      padding: 8px 15px;
+      border-radius: 20px;
+      font-weight: bold;
+      font-family: monospace;
+      color: var(--accent-color);
+      box-shadow: 0 0 8px var(--accent-color);
+      user-select: none;
+      z-index: 1000;
+      min-width: 80px;
+      text-align: center;
+    }
   </style>
 </head>
 <body>
@@ -144,11 +174,11 @@
     <a href="#">Conta</a>
     <a href="#">Uploads</a>
     <a href="#">Seguidores</a>
-    <a href="https://instagram.com/juniorfnd" target="_blank">Siga no Instagram (@juniorfnd)</a>
+    <a href="https://instagram.com/vivaldo.junior" target="_blank">Siga no Instagram (@vivaldo.junior)</a>
   </div>
   <div class="main-content">
     <header>
-      <h1>DJ Nome - Meus Sets</h1>
+      <h1>ARKEA</h1>
     </header>
     <div class="container">
       <div class="upload-section">
@@ -164,7 +194,30 @@
     </footer>
   </div>
 
+  <!-- Relógio de tempo da música -->
+  <div id="timeDisplay">00:00</div>
+
   <script>
+    let activeWave = null;
+    let activePlayButton = null;
+    let timeDisplay = document.getElementById('timeDisplay');
+
+    function formatTime(seconds) {
+      const min = Math.floor(seconds / 60);
+      const sec = Math.floor(seconds % 60);
+      return `${min.toString().padStart(2,'0')}:${sec.toString().padStart(2,'0')}`;
+    }
+
+    // Atualiza o relógio do tempo tocando a cada 500ms
+    function updateTime() {
+      if (activeWave && activeWave.isPlaying()) {
+        const currentTime = activeWave.getCurrentTime();
+        timeDisplay.textContent = formatTime(currentTime);
+      }
+      requestAnimationFrame(updateTime);
+    }
+    updateTime();
+
     document.getElementById('uploadInput').addEventListener('change', function(e) {
       const file = e.target.files[0];
       if (!file) return;
@@ -189,15 +242,18 @@
         const container = document.createElement('div');
         container.className = 'set';
         container.innerHTML = `
-          <h2>${file.name}</h2>
-          <div class="waveform"></div>
-          <div class="controls">
-            <button class="play-button">Play/Pause</button>
-            <input type="range" min="0" max="1" step="0.01" value="1" />
-          </div>
-          <div class="comments">
-            <textarea placeholder="Deixe um comentário..."></textarea>
-            <button>Comentar</button>
+          <img src="https://cdn-icons-png.flaticon.com/512/727/727218.png" alt="Imagem do Set" />
+          <div class="set-content">
+            <h2>${file.name}</h2>
+            <div class="waveform"></div>
+            <div class="controls">
+              <button class="play-button">Play/Pause</button>
+              <input type="range" min="0" max="1" step="0.01" value="1" />
+            </div>
+            <div class="comments">
+              <textarea placeholder="Deixe um comentário..."></textarea>
+              <button>Comentar</button>
+            </div>
           </div>
         `;
         document.querySelector('.container').appendChild(container);
@@ -216,11 +272,18 @@
 
         newWave.load(URL.createObjectURL(file));
 
-        playBtn.addEventListener('click', () => newWave.playPause());
-        volSlider.addEventListener('input', (e) => newWave.setVolume(e.target.value));
-      };
-      reader.readAsArrayBuffer(file);
-    });
-  </script>
-</body>
-</html>
+        playBtn.addEventListener('click', () => {
+          // Se já tem outro tocando, pause ele
+          if (activeWave && activeWave !== newWave) {
+            activeWave.pause();
+            if (activePlayButton) activePlayButton.textContent = 'Play';
+          }
+          if (newWave.isPlaying()) {
+            newWave.pause();
+            playBtn.textContent = 'Play';
+            activeWave = null;
+            activePlayButton = null;
+            timeDisplay.textContent = "00:00";
+          } else {
+            newWave.play();
+            play
